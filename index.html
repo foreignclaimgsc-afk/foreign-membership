@@ -113,13 +113,13 @@
   .field-group{margin-bottom:14px;}
   .field-group label{display:block;font-size:13.5px;font-weight:700;margin-bottom:6px;}
   .field-group label .req{color:var(--clay);margin-left:4px;}
-  .field-group input{
+  .field-group input, .field-group select{
     width:100%;border:1.5px solid #D8CDA9;border-radius:9px;
     padding:11px 13px;font-family:'Tajawal',sans-serif;font-size:14.5px;
     background:#fff;color:var(--ink);
   }
-  .field-group input:focus{outline:none;border-color:var(--brass);}
-  .field-group.has-error input{border-color:var(--clay);}
+  .field-group input:focus, .field-group select:focus{outline:none;border-color:var(--brass);}
+  .field-group.has-error input, .field-group.has-error select{border-color:var(--clay);}
   .field-error{display:none;color:var(--clay);font-size:12px;margin-top:5px;}
   .field-group.has-error .field-error{display:block;}
 
@@ -335,6 +335,34 @@
         <input type="text" id="inpAddress" placeholder="Current residential address">
         <p class="field-error">Please enter the address</p>
       </div>
+
+      <div class="field-group" id="fg-phone">
+        <label for="inpPhone"><span class="req">*</span>Phone Number</label>
+        <input type="tel" id="inpPhone" placeholder="e.g. +20 100 000 0000">
+        <p class="field-error">Please enter the phone number</p>
+      </div>
+
+      <div class="field-group" id="fg-nationality">
+        <label for="inpNationality"><span class="req">*</span>Nationality</label>
+        <input type="text" id="inpNationality" placeholder="e.g. British, French, American">
+        <p class="field-error">Please enter the nationality</p>
+      </div>
+
+      <div class="field-group" id="fg-gender">
+        <label for="inpGender"><span class="req">*</span>Gender</label>
+        <select id="inpGender">
+          <option value="" disabled selected>Select gender</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+        <p class="field-error">Please select the gender</p>
+      </div>
+
+      <div class="field-group" id="fg-passport">
+        <label for="inpPassport"><span class="req">*</span>Passport Number</label>
+        <input type="text" id="inpPassport" placeholder="Passport number">
+        <p class="field-error">Please enter the passport number</p>
+      </div>
     </section>
   </div>
 
@@ -476,6 +504,10 @@
   <h4>Applicant Information</h4>
   <div class="pdf-grid">
     <div><div class="k">Member Name</div><div class="v" id="pdfName">—</div></div>
+    <div><div class="k">Gender</div><div class="v" id="pdfGender">—</div></div>
+    <div><div class="k">Nationality</div><div class="v" id="pdfNationality">—</div></div>
+    <div><div class="k">Passport Number</div><div class="v" id="pdfPassport">—</div></div>
+    <div><div class="k">Phone Number</div><div class="v" id="pdfPhone">—</div></div>
     <div><div class="k">Employer</div><div class="v" id="pdfEmployer">—</div></div>
     <div><div class="k">Address</div><div class="v" id="pdfAddress">—</div></div>
     <div><div class="k">Date Issued</div><div class="v" id="pdfDate">—</div></div>
@@ -932,7 +964,7 @@ const PRICING = {
 const APPLICATION_FEE = 100;
 
 const FAMILY_ITEMS = [
-  { key:"wife",   name:"Wife",                 kind:"toggle", max:1 },
+  { key:"wife",   name:"Spouse (Husband / Wife)", kind:"toggle", max:1 },
   { key:"child",  name:"Child (3 to 21 years)", kind:"stepper", max:10 },
   { key:"parent", name:"Mother / Father",       kind:"stepper", max:2 },
   { key:"nurse",  name:"Nurse / Nanny",         kind:"stepper", max:3 },
@@ -946,7 +978,7 @@ let state = {
   previousExpiry: "",
   type: "regular",
   duration: "year",
-  applicant: { name:"", employer:"", address:"" },
+  applicant: { name:"", employer:"", address:"", phone:"", nationality:"", gender:"", passport:"" },
   counts: { wife:0, child:0, parent:0, nurse:0, driver:0, locker:0 },
   lastTotal: 0,
   lastLines: []
@@ -1174,7 +1206,9 @@ function computeResult(){
 }
 
 /* ---------- Applicant fields & validation ---------- */
-["name","employer","address"].forEach(key=>{
+const APPLICANT_FIELDS = ["name","employer","address","phone","nationality","gender","passport"];
+
+APPLICANT_FIELDS.forEach(key=>{
   const el = document.getElementById("inp" + key.charAt(0).toUpperCase() + key.slice(1));
   el.addEventListener("input", (e)=>{
     state.applicant[key] = e.target.value;
@@ -1185,11 +1219,17 @@ function computeResult(){
   el.addEventListener("blur", (e)=>{
     document.getElementById("fg-" + key).classList.toggle("has-error", e.target.value.trim().length === 0);
   });
+  el.addEventListener("change", (e)=>{
+    state.applicant[key] = e.target.value;
+    if(e.target.value.trim().length > 0){
+      document.getElementById("fg-" + key).classList.remove("has-error");
+    }
+  });
 });
 
 function validateApplicant(){
   let ok = true;
-  ["name","employer","address"].forEach(key=>{
+  APPLICANT_FIELDS.forEach(key=>{
     const filled = state.applicant[key] && state.applicant[key].trim().length > 0;
     document.getElementById("fg-" + key).classList.toggle("has-error", !filled);
     if(!filled) ok = false;
@@ -1274,6 +1314,10 @@ document.getElementById("exportPdfBtn").addEventListener("click", ()=>{
   errNote.textContent = "";
 
   document.getElementById("pdfName").textContent = state.applicant.name;
+  document.getElementById("pdfGender").textContent = state.applicant.gender === "male" ? "Male" : state.applicant.gender === "female" ? "Female" : "—";
+  document.getElementById("pdfNationality").textContent = state.applicant.nationality;
+  document.getElementById("pdfPassport").textContent = state.applicant.passport;
+  document.getElementById("pdfPhone").textContent = state.applicant.phone;
   document.getElementById("pdfEmployer").textContent = state.applicant.employer;
   document.getElementById("pdfAddress").textContent = state.applicant.address;
   document.getElementById("pdfDate").textContent = new Date().toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" });
